@@ -68,7 +68,7 @@ func main() {
 	// Load dotenv file
 	envErr := godotenv.Load()
 	if envErr != nil {
-		log.Fatal("ENV failed to load")
+		log.Print("ENV failed to load")
 	}
 
 	// Set port (for heroku later)
