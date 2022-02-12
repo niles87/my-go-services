@@ -1,1 +1,1 @@
-web: bin/my-go-services
+web: ./bin/my-go-services
