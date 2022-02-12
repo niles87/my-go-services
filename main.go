@@ -97,5 +97,5 @@ func main() {
 	userApp.Post("", createUser)
 	userApp.Put("", updateUser)
 
-	log.Fatal(app.Listen(PORT))
+	log.Fatal(app.Listen(":" + PORT))
 }
