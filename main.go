@@ -82,6 +82,8 @@ func main() {
 		Views: engine,
 	})
 
+	app.Static("/", "./public")
+
 	// Display index route
 	app.Get("/", getIndex)
 
