@@ -15,54 +15,17 @@ type Message struct {
 	Msg string
 }
 
-func getIndex(c *fiber.Ctx) error {
-	return c.Render("index", fiber.Map{
-		"Title":  "Welcome",
-		"Second": "To my services",
-	})
-}
-
 type User struct {
-	Name  string
-	Email string
+	Id       int64
+	Name     string
+	Email    string
+	Password string
+	Wins     int
+	Losses   int
+	Draws    int
 }
 
-func getUser(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusOK).JSON(user)
-}
-
-var user User
-
-func createUser(c *fiber.Ctx) error {
-
-	body := new(User)
-
-	err := c.BodyParser(body)
-
-	if err != nil {
-		c.Status(fiber.StatusBadRequest).JSON(Message{Msg: err.Error()})
-		return err
-	}
-
-	user = User{
-		Name:  body.Name,
-		Email: body.Email,
-	}
-	return c.Status(fiber.StatusCreated).JSON(user)
-}
-
-func updateUser(c *fiber.Ctx) error {
-
-	body := new(User)
-	err := c.BodyParser(body)
-	if err != nil {
-		c.Status(fiber.StatusBadRequest).JSON(Message{Msg: err.Error()})
-		return err
-	}
-
-	user = *body
-	return c.Status(fiber.StatusAccepted).JSON(user)
-}
+var users []User
 
 func main() {
 	// Load dotenv file
@@ -84,18 +47,10 @@ func main() {
 
 	app.Static("/", "./public")
 
-	// Display index route
-	app.Get("/", getIndex)
-
 	// Add middleware with .Use
 	app.Use(logger.New())
 	app.Use(requestid.New())
-
-	// Group related endpoints together
-	userApp := app.Group("/user")
-	userApp.Get("", getUser)
-	userApp.Post("", createUser)
-	userApp.Put("", updateUser)
+	routes(app)
 
 	log.Fatal(app.Listen(":" + PORT))
 }
