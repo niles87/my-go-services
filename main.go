@@ -25,8 +25,6 @@ type User struct {
 	Draws    int
 }
 
-var users []User
-
 func main() {
 	// Load dotenv file
 	envErr := godotenv.Load()

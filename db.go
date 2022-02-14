@@ -88,3 +88,41 @@ func queryUserByID(id int64) (User, error) {
 
 	return user, nil
 }
+
+func deleteUserByID(id int64) (int64, error) {
+	stmt, err := db.Prepare("DELETE FROM user WHERE id=?")
+	if err != nil {
+		return 0, fmt.Errorf("failed to prepare statement: %v", err)
+	}
+
+	res, err := stmt.Exec(id)
+	if err != nil {
+		return 0, fmt.Errorf("deleteUserByID: %v", err)
+	}
+
+	rowsRemoved, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("deleteUserById: %v", err)
+	}
+
+	return rowsRemoved, nil
+}
+
+func updateUserByID(id int64, user User) (int64, error) {
+	stmt, err := db.Prepare("UPDATE user SET name=?, email=?, password=?, wins=?, losses=?, draws=? WHERE id=?")
+	if err != nil {
+		return 0, fmt.Errorf("failed to prepare statement: %v", err)
+	}
+
+	res, err := stmt.Exec(user.Name, user.Email, user.Password, user.Wins, user.Losses, user.Draws, id)
+	if err != nil {
+		return 0, fmt.Errorf("updateUserById: %v", err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("updateUserById: %v", err)
+	}
+
+	return rowsAffected, nil
+}
