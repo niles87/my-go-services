@@ -17,7 +17,7 @@ func connect() {
 	if prod != "" {
 		db, err = sql.Open("mysql", os.Getenv("JAWSDB_URL"))
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("Failed to connect", err)
 		}
 	} else {
 		db, err = sql.Open("mysql", os.Getenv("DATABASE"))
