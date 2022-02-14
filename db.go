@@ -19,11 +19,11 @@ func connect() {
 		if err != nil {
 			log.Fatal(err)
 		}
-	}
-
-	db, err = sql.Open("mysql", os.Getenv("DATABASE"))
-	if err != nil {
-		log.Fatal(err)
+	} else {
+		db, err = sql.Open("mysql", os.Getenv("DATABASE"))
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	pingErr := db.Ping()
