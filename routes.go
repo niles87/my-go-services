@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,20 +15,25 @@ func getIndex(c *fiber.Ctx) error {
 }
 
 func getUsers(c *fiber.Ctx) error {
+	users, err := queryAllUsers()
+	if err != nil {
+		fmt.Println(err)
+		return c.Status(fiber.StatusInternalServerError).JSON(Message{Msg: "something failed"})
+	}
 	return c.Status(fiber.StatusOK).JSON(users)
 }
 
 func getUser(c *fiber.Ctx) error {
-	i, err := strconv.Atoi(c.Params("id"))
+	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(Message{Msg: "Missing params"})
 	}
-	for _, val := range users {
-		if val.Id == int64(i) {
-			return c.Status(fiber.StatusOK).JSON(val)
-		}
+	user, err := queryUserByID(int64(id))
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(Message{Msg: "User not found"})
 	}
-	return c.Status(fiber.StatusNotFound).JSON(Message{Msg: "User not found"})
+
+	return c.Status(fiber.StatusOK).JSON(user)
 }
 
 func createUser(c *fiber.Ctx) error {
@@ -42,7 +48,6 @@ func createUser(c *fiber.Ctx) error {
 	}
 
 	user := User{
-		Id:       int64(len(users) + 1),
 		Name:     body.Name,
 		Email:    body.Email,
 		Password: body.Password,
@@ -51,7 +56,14 @@ func createUser(c *fiber.Ctx) error {
 		Draws:    0,
 	}
 
-	users = append(users, user)
+	id, err := addUser(user)
+
+	if err != nil {
+		fmt.Println(err)
+		return c.Status(fiber.StatusInternalServerError).JSON(Message{Msg: "something failed"})
+	}
+
+	user.Id = id
 
 	return c.Status(fiber.StatusCreated).JSON(user)
 }

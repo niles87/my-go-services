@@ -34,6 +34,8 @@ func main() {
 		log.Print("ENV failed to load")
 	}
 
+	connect()
+
 	// Set port (for heroku later)
 	PORT := os.Getenv("PORT")
 
