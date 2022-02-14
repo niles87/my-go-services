@@ -25,14 +25,14 @@ type User struct {
 	Draws    int
 }
 
-var users []User
-
 func main() {
 	// Load dotenv file
 	envErr := godotenv.Load()
 	if envErr != nil {
 		log.Print("ENV failed to load")
 	}
+
+	connect()
 
 	// Set port (for heroku later)
 	PORT := os.Getenv("PORT")

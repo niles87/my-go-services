@@ -3,9 +3,11 @@ module github.com/niles87/my-go-services
 go 1.17
 
 require (
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gofiber/fiber/v2 v2.26.0
 	github.com/gofiber/template v1.6.22
 	github.com/joho/godotenv v1.4.0
+	golang.org/x/crypto v0.0.0-20220213190939-1e6e3497d506
 )
 
 require (

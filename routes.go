@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,20 +15,25 @@ func getIndex(c *fiber.Ctx) error {
 }
 
 func getUsers(c *fiber.Ctx) error {
+	users, err := queryAllUsers()
+	if err != nil {
+		fmt.Println(err)
+		return c.Status(fiber.StatusInternalServerError).JSON(Message{Msg: "something failed"})
+	}
 	return c.Status(fiber.StatusOK).JSON(users)
 }
 
 func getUser(c *fiber.Ctx) error {
-	i, err := strconv.Atoi(c.Params("id"))
+	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(Message{Msg: "Missing params"})
 	}
-	for _, val := range users {
-		if val.Id == int64(i) {
-			return c.Status(fiber.StatusOK).JSON(val)
-		}
+	user, err := queryUserByID(int64(id))
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(Message{Msg: "User not found"})
 	}
-	return c.Status(fiber.StatusNotFound).JSON(Message{Msg: "User not found"})
+
+	return c.Status(fiber.StatusOK).JSON(user)
 }
 
 func createUser(c *fiber.Ctx) error {
@@ -41,17 +47,29 @@ func createUser(c *fiber.Ctx) error {
 		return err
 	}
 
+	hashedPassword, err := hashPassword(body.Password)
+	if err != nil {
+		fmt.Println(err)
+		return c.Status(fiber.StatusInternalServerError).JSON(Message{Msg: "Password failure"})
+	}
+
 	user := User{
-		Id:       int64(len(users) + 1),
 		Name:     body.Name,
 		Email:    body.Email,
-		Password: body.Password,
+		Password: hashedPassword,
 		Wins:     0,
 		Losses:   0,
 		Draws:    0,
 	}
 
-	users = append(users, user)
+	id, err := addUser(user)
+
+	if err != nil {
+		fmt.Println(err)
+		return c.Status(fiber.StatusInternalServerError).JSON(Message{Msg: "something failed"})
+	}
+
+	user.Id = id
 
 	return c.Status(fiber.StatusCreated).JSON(user)
 }
@@ -66,15 +84,37 @@ func updateUser(c *fiber.Ctx) error {
 	}
 
 	user := *body
+	hashedPassword, err := hashPassword(user.Password)
+	if err != nil {
+		fmt.Println(err)
+		return c.Status(fiber.StatusInternalServerError).JSON(Message{Msg: "Password failure"})
+	}
+	user.Password = hashedPassword
 
-	for i, val := range users {
-		if int64(val.Id) == user.Id {
-			users[i] = user
-			return c.Status(fiber.StatusAccepted).JSON(user)
-		}
+	rowAffected, err := updateUserByID(user.Id, user)
+	if err != nil {
+		fmt.Println(err)
+		return c.Status(fiber.StatusInternalServerError).JSON(Message{Msg: "something failed"})
 	}
 
+	if rowAffected == 1 {
+		return c.Status(fiber.StatusAccepted).JSON(user)
+	}
 	return c.Status(fiber.StatusNotFound).JSON(Message{Msg: "User Not Found"})
+}
+
+func deleteUser(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(Message{Msg: "Missing params"})
+	}
+
+	rowsRemoved, err := deleteUserByID(int64(id))
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(Message{Msg: "User not found"})
+	}
+
+	return c.Status(fiber.StatusAccepted).JSON(Message{Msg: fmt.Sprintf("Success %d record removed", rowsRemoved)})
 }
 
 func routes(app *fiber.App) {
@@ -87,5 +127,5 @@ func routes(app *fiber.App) {
 	userApp.Post("", createUser)
 	userApp.Put("", updateUser)
 	userApp.Get("/:id", getUser)
-
+	userApp.Delete("/:id", deleteUser)
 }
