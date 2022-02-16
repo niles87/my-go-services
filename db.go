@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 )
 
 var db *sql.DB
@@ -15,7 +15,14 @@ func connect() {
 	prod := os.Getenv("PRODUCTION")
 	var err error
 	if prod != "" {
-		db, err = sql.Open("mysql", os.Getenv("JAWSDB_URL"))
+		mysqlCfg := mysql.Config{
+			User:   os.Getenv("USER"),
+			Passwd: os.Getenv("PASSWORD"),
+			Net:    os.Getenv("NET"),
+			Addr:   os.Getenv("ADDRESS"),
+			DBName: os.Getenv("DB_NAME"),
+		}
+		db, err = sql.Open("mysql", mysqlCfg.FormatDSN())
 		if err != nil {
 			log.Fatal("Failed to connect", err)
 		}
