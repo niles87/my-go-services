@@ -35,7 +35,7 @@ func connect() {
 
 	pingErr := db.Ping()
 	if pingErr != nil {
-		log.Fatal(pingErr)
+		log.Fatal("failed on ping", pingErr)
 	}
 
 	fmt.Println("Connected to db!")
