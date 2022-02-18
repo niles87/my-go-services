@@ -9,21 +9,9 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/template/html"
 	"github.com/joho/godotenv"
+	"github.com/niles87/my-go-services/controller"
+	"github.com/niles87/my-go-services/mydb"
 )
-
-type Message struct {
-	Msg string
-}
-
-type User struct {
-	Id       int64
-	Name     string
-	Email    string
-	Password string
-	Wins     int
-	Losses   int
-	Draws    int
-}
 
 func main() {
 	// Load dotenv file
@@ -32,7 +20,12 @@ func main() {
 		log.Print("ENV failed to load")
 	}
 
-	connect()
+	db, err := mydb.Connect()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	hdl := controller.NewDBHandler(db)
 
 	// Set port (for heroku later)
 	PORT := os.Getenv("PORT")
@@ -50,7 +43,16 @@ func main() {
 	// Add middleware with .Use
 	app.Use(logger.New())
 	app.Use(requestid.New())
-	routes(app)
+	// Display index route
+	app.Get("/", hdl.GetIndex)
+
+	// Group related endpoints together
+	userApp := app.Group("/user")
+	userApp.Get("", hdl.GetUsers)
+	userApp.Post("", hdl.CreateUser)
+	userApp.Put("", hdl.UpdateUser)
+	userApp.Get("/:id", hdl.GetUser)
+	userApp.Delete("/:id", hdl.DeleteUser)
 
 	log.Fatal(app.Listen(":" + PORT))
 }
