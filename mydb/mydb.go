@@ -9,12 +9,10 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
-var db *sql.DB
-
 func Connect() (*sql.DB, error) {
-	// Function to connect to a database
-	prod := os.Getenv("PRODUCTION")
+	var db *sql.DB
 	var err error
+	prod := os.Getenv("PRODUCTION")
 	if prod != "" {
 		mysqlCfg := mysql.Config{
 			User:                 os.Getenv("USER"),
