@@ -53,6 +53,7 @@ func main() {
 	userApp.Put("", hdl.UpdateUser)
 	userApp.Get("/:id", hdl.GetUser)
 	userApp.Delete("/:id", hdl.DeleteUser)
+	userApp.Post("/login", hdl.Login)
 
 	log.Fatal(app.Listen(":" + PORT))
 }
