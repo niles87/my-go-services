@@ -33,19 +33,22 @@ func (db *DBHandler) GetUsers(c *fiber.Ctx) error {
 	users, err := queryAllUsers(db)
 	if err != nil {
 		fmt.Println(err)
-		return c.Status(fiber.StatusInternalServerError).JSON(data.Message{Msg: "something failed"})
+		c.Status(fiber.StatusInternalServerError).JSON(data.Message{Msg: "something failed"})
+		return err
 	}
 	return c.Status(fiber.StatusOK).JSON(users)
 }
 
-func (db *DBHandler) GetUser(c *fiber.Ctx) error {
+func (db *DBHandler) GetUserById(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(data.Message{Msg: "Missing params"})
+		c.Status(fiber.StatusNotFound).JSON(data.Message{Msg: "Missing params"})
+		return err
 	}
 	user, err := queryUserByID(db, int64(id))
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(data.Message{Msg: "User not found"})
+		c.Status(fiber.StatusNotFound).JSON(data.Message{Msg: "User not found"})
+		return err
 	}
 
 	return c.Status(fiber.StatusOK).JSON(user)
@@ -65,7 +68,8 @@ func (db *DBHandler) CreateUser(c *fiber.Ctx) error {
 	hashedPassword, err := helpers.HashPassword(body.Password)
 	if err != nil {
 		fmt.Println(err)
-		return c.Status(fiber.StatusInternalServerError).JSON(data.Message{Msg: "Password failure"})
+		c.Status(fiber.StatusInternalServerError).JSON(data.Message{Msg: "Password failure"})
+		return err
 	}
 
 	user := data.User{
@@ -81,7 +85,8 @@ func (db *DBHandler) CreateUser(c *fiber.Ctx) error {
 
 	if err != nil {
 		fmt.Println(err)
-		return c.Status(fiber.StatusInternalServerError).JSON(data.Message{Msg: "something failed"})
+		c.Status(fiber.StatusInternalServerError).JSON(data.Message{Msg: "something failed"})
+		return err
 	}
 
 	user.Id = id
@@ -102,14 +107,16 @@ func (db *DBHandler) UpdateUser(c *fiber.Ctx) error {
 	hashedPassword, err := helpers.HashPassword(user.Password)
 	if err != nil {
 		fmt.Println(err)
-		return c.Status(fiber.StatusInternalServerError).JSON(data.Message{Msg: "Password failure"})
+		c.Status(fiber.StatusInternalServerError).JSON(data.Message{Msg: "Password failure"})
+		return err
 	}
 	user.Password = hashedPassword
 
 	rowAffected, err := updateUserByID(db, user.Id, user)
 	if err != nil {
 		fmt.Println(err)
-		return c.Status(fiber.StatusInternalServerError).JSON(data.Message{Msg: "something failed"})
+		c.Status(fiber.StatusInternalServerError).JSON(data.Message{Msg: "something failed"})
+		return err
 	}
 
 	if rowAffected == 1 {
@@ -121,15 +128,42 @@ func (db *DBHandler) UpdateUser(c *fiber.Ctx) error {
 func (db *DBHandler) DeleteUser(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(data.Message{Msg: "Missing params"})
+		c.Status(fiber.StatusNotFound).JSON(data.Message{Msg: "Missing params"})
+		return err
 	}
 
 	rowsRemoved, err := deleteUserByID(db, int64(id))
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(data.Message{Msg: "User not found"})
+		c.Status(fiber.StatusNotFound).JSON(data.Message{Msg: "User not found"})
+		return err
 	}
 
 	return c.Status(fiber.StatusAccepted).JSON(data.Message{Msg: fmt.Sprintf("Success %d record removed", rowsRemoved)})
+}
+
+func (db *DBHandler) Login(c *fiber.Ctx) error {
+	body := new(data.User)
+
+	err := c.BodyParser(body)
+	if err != nil {
+		c.Status(fiber.StatusBadRequest).JSON(data.Message{Msg: err.Error()})
+		return err
+	}
+
+	user, err := queryUserByEmail(db, body.Email)
+	if err != nil {
+		c.Status(fiber.StatusBadRequest).JSON(data.Message{Msg: "User not found"})
+		return err
+	}
+
+	match := helpers.CheckPassword(body.Password, user.Password)
+
+	if match {
+		// Need to add token login
+		return c.Status(fiber.StatusOK).JSON(user)
+	} else {
+		return c.Status(fiber.StatusBadRequest).JSON(data.Message{Msg: "Record not found"})
+	}
 }
 
 func queryAllUsers(hdl *DBHandler) ([]data.User, error) {
@@ -181,7 +215,7 @@ func queryUserByID(hdl *DBHandler, id int64) (data.User, error) {
 		if err == sql.ErrNoRows {
 			return user, fmt.Errorf("queryUserById no record with id: %d ", id)
 		}
-		return user, fmt.Errorf("addUser %v", err)
+		return user, fmt.Errorf("queryUserById %v", err)
 	}
 
 	return user, nil
@@ -223,4 +257,19 @@ func updateUserByID(hdl *DBHandler, id int64, user data.User) (int64, error) {
 	}
 
 	return rowsAffected, nil
+}
+
+func queryUserByEmail(hdl *DBHandler, email string) (data.User, error) {
+	var user data.User
+
+	row := hdl.db.QueryRow("SELECT * FROM user WHERE email=?", email)
+
+	if err := row.Scan(&user.Id, &user.Name, &user.Email, &user.Password, &user.Wins, &user.Losses, &user.Draws); err != nil {
+		if err == sql.ErrNoRows {
+			return user, fmt.Errorf("queryUserByEmail no record with email: %s ", email)
+		}
+		return user, fmt.Errorf("queryUserByEmail %v", err)
+	}
+
+	return user, nil
 }
