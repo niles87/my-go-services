@@ -39,7 +39,7 @@ func (db *DBHandler) GetUsers(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(users)
 }
 
-func (db *DBHandler) GetUser(c *fiber.Ctx) error {
+func (db *DBHandler) GetUserById(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		c.Status(fiber.StatusNotFound).JSON(data.Message{Msg: "Missing params"})

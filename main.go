@@ -51,7 +51,7 @@ func main() {
 	userApp.Get("", hdl.GetUsers)
 	userApp.Post("", hdl.CreateUser)
 	userApp.Put("", hdl.UpdateUser)
-	userApp.Get("/:id", hdl.GetUser)
+	userApp.Get("/:id", hdl.GetUserById)
 	userApp.Delete("/:id", hdl.DeleteUser)
 	userApp.Post("/login", hdl.Login)
 
